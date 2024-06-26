@@ -85,26 +85,7 @@
         <button type="submit">Entrar</button>
     </form>
 
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBI1YaAaz9MpybzlRGYILk-nn-ozNTGVX4",
-            authDomain: "procentagem-competitivo.firebaseapp.com",
-            projectId: "procentagem-competitivo",
-            storageBucket: "procentagem-competitivo.appspot.com",
-            messagingSenderId: "753103789798",
-            appId: "1:753103789798:web:f20fe41624824b74c3e527",
-            measurementId: "G-42WL58PP0T"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-
+    <script>
         document.getElementById('join-form').addEventListener('submit', function(event) {
             event.preventDefault();
             const playerName = document.getElementById('player_name').value;
@@ -112,11 +93,8 @@
             localStorage.setItem('playerName', playerName);
             localStorage.setItem('roomCode', roomCode);
 
-            set(ref(database, 'rooms/' + roomCode + '/players/' + playerName), {
-                score: 0
-            }).then(() => {
-                window.location.href = 'game.html';
-            });
+            // Redireciona para a página do jogo com os parâmetros de URL
+            window.location.href = `game.html?room=${roomCode}&player=${playerName}`;
         });
     </script>
 </body>
