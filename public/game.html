@@ -129,78 +129,102 @@
             <button type="submit">ENVIAR RESPOSTA</button>
         </form>
     </div>
-    <script>
+
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBI1YaAaz9MpybzlRGYILk-nn-ozNTGVX4",
+            authDomain: "procentagem-competitivo.firebaseapp.com",
+            projectId: "procentagem-competitivo",
+            storageBucket: "procentagem-competitivo.appspot.com",
+            messagingSenderId: "753103789798",
+            appId: "1:753103789798:web:f20fe41624824b74c3e527",
+            measurementId: "G-42WL58PP0T"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
         const roomCode = localStorage.getItem('roomCode');
         const playerName = localStorage.getItem('playerName');
-    
-        const allScores = JSON.parse(localStorage.getItem('allScores')) || {};
-        if (!allScores[roomCode]) {
-            allScores[roomCode] = {};
+
+        function writePlayerData(roomCode, playerName, score) {
+            set(ref(database, 'rooms/' + roomCode + '/players/' + playerName), {
+                score: score
+            });
         }
-        const playerScores = allScores[roomCode];
-    
-        if (!playerScores[playerName]) {
-            playerScores[playerName] = 0;
+
+        function readPlayerData(roomCode, callback) {
+            const playersRef = ref(database, 'rooms/' + roomCode + '/players');
+            onValue(playersRef, (snapshot) => {
+                const data = snapshot.val();
+                callback(data);
+            });
         }
-    
-        const percentages = Array.from({length: 10}, (_, i) => (i + 1) * 10);
-        const maxNumber = 1000;
-    
+
         function generateNextEquation() {
+            const percentages = Array.from({length: 10}, (_, i) => (i + 1) * 10);
+            const maxNumber = 1000;
             const percentage = percentages[Math.floor(Math.random() * percentages.length)];
             const number = Math.floor(Math.random() * (maxNumber / 10) + 1) * 10;
             return `${percentage}% de ${number}`;
         }
-    
+
         function calculateEquation(equation) {
             try {
                 const [percent, , number] = equation.split(' ');
                 const parsedPercent = parseInt(percent.replace('%', ''));
                 const parsedNumber = parseInt(number);
-    
                 return (parsedPercent / 100) * parsedNumber;
             } catch {
                 return null;
             }
         }
-    
-        function updateScoreboard() {
-            const scores = Object.entries(playerScores).sort((a, b) => b[1] - a[1]);
+
+        function updateScoreboard(players) {
+            const scores = Object.entries(players).sort((a, b) => b[1].score - a[1].score);
             const scoreList = document.getElementById('score-list');
             scoreList.innerHTML = '';
             scores.forEach((score, index) => {
                 const li = document.createElement('li');
-                li.textContent = `${score[0]}: ${score[1]}`;
+                li.textContent = `${score[0]}: ${score[1].score}`;
                 li.classList.add('player-score');
                 if (index === 0) li.classList.add('first-place');
                 else if (index === 1) li.classList.add('second-place');
                 else if (index === 2) li.classList.add('third-place');
                 scoreList.appendChild(li);
             });
-            allScores[roomCode] = playerScores;
-            localStorage.setItem('allScores', JSON.stringify(allScores));
         }
-    
+
         document.getElementById('score-form').addEventListener('submit', function(event) {
             event.preventDefault();
             const answer = parseFloat(document.getElementById('answer').value);
             const equation = document.getElementById('equation').value;
             const correctAnswer = calculateEquation(equation);
-    
+
             if (answer === correctAnswer) {
-                playerScores[playerName] += 1;
-    
-                updateScoreboard();
+                const playerScoresRef = ref(database, 'rooms/' + roomCode + '/players/' + playerName);
+                playerScoresRef.get().then((snapshot) => {
+                    const currentScore = snapshot.val().score || 0;
+                    const newScore = currentScore + 1;
+                    writePlayerData(roomCode, playerName, newScore);
+                });
+
                 document.getElementById('answer').value = '';
                 document.getElementById('equation').value = generateNextEquation();
             } else {
                 alert('RESPOSTA ERRADA!!!');
             }
         });
-    
+
         document.getElementById('equation').value = generateNextEquation();
-        updateScoreboard();
+
+        readPlayerData(roomCode, updateScoreboard);
     </script>
-    
 </body>
 </html>
