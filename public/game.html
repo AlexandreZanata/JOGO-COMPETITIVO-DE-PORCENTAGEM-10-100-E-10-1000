@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Game Arena</title>
     <style>
-        body {
+         body {
             display: flex;
             font-family: Arial, sans-serif;
             background-color: rgb(255, 253, 253);
@@ -130,41 +130,32 @@
         </form>
     </div>
 
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBI1YaAaz9MpybzlRGYILk-nn-ozNTGVX4",
-            authDomain: "procentagem-competitivo.firebaseapp.com",
-            projectId: "procentagem-competitivo",
-            storageBucket: "procentagem-competitivo.appspot.com",
-            messagingSenderId: "753103789798",
-            appId: "1:753103789798:web:f20fe41624824b74c3e527",
-            measurementId: "G-42WL58PP0T"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const database = getDatabase(app);
-
-        const roomCode = localStorage.getItem('roomCode');
-        const playerName = localStorage.getItem('playerName');
-
-        function writePlayerData(roomCode, playerName, score) {
-            set(ref(database, 'rooms/' + roomCode + '/players/' + playerName), {
-                score: score
+    <script>
+        // Funções para manipulação da URL
+        function getQueryParams() {
+            const params = {};
+            window.location.search.replace(/^\?/, '').split('&').forEach(param => {
+                const [key, value] = param.split('=');
+                params[key] = decodeURIComponent(value);
             });
+            return params;
+        }
+
+        // Inicializa variáveis de sala e jogador
+        const queryParams = getQueryParams();
+        const roomCode = queryParams.room;
+        const playerName = queryParams.player;
+
+        // Função para ler e escrever dados no LocalStorage
+        function writePlayerData(roomCode, playerName, score) {
+            const roomData = JSON.parse(localStorage.getItem(roomCode)) || {};
+            roomData[playerName] = { score };
+            localStorage.setItem(roomCode, JSON.stringify(roomData));
         }
 
         function readPlayerData(roomCode, callback) {
-            const playersRef = ref(database, 'rooms/' + roomCode + '/players');
-            onValue(playersRef, (snapshot) => {
-                const data = snapshot.val();
-                callback(data);
-            });
+            const roomData = JSON.parse(localStorage.getItem(roomCode)) || {};
+            callback(roomData);
         }
 
         function generateNextEquation() {
@@ -208,11 +199,11 @@
             const correctAnswer = calculateEquation(equation);
 
             if (answer === correctAnswer) {
-                const playerScoresRef = ref(database, 'rooms/' + roomCode + '/players/' + playerName);
-                playerScoresRef.get().then((snapshot) => {
-                    const currentScore = snapshot.val().score || 0;
+                readPlayerData(roomCode, (players) => {
+                    const currentScore = players[playerName]?.score || 0;
                     const newScore = currentScore + 1;
                     writePlayerData(roomCode, playerName, newScore);
+                    readPlayerData(roomCode, updateScoreboard);
                 });
 
                 document.getElementById('answer').value = '';
@@ -223,7 +214,6 @@
         });
 
         document.getElementById('equation').value = generateNextEquation();
-
         readPlayerData(roomCode, updateScoreboard);
     </script>
 </body>
